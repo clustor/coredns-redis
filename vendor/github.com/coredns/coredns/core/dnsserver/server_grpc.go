@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/pb"
 	"github.com/coredns/coredns/plugin/pkg/reuseport"
 	"github.com/coredns/coredns/plugin/pkg/transport"
 
-	"github.com/caddyserver/caddy"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/miekg/dns"
 	"github.com/opentracing/opentracing-go"
@@ -22,6 +22,7 @@ import (
 // ServergRPC represents an instance of a DNS-over-gRPC server.
 type ServergRPC struct {
 	*Server
+	*pb.UnimplementedDnsServiceServer
 	grpcServer *grpc.Server
 	listenAddr net.Addr
 	tlsConfig  *tls.Config
@@ -39,6 +40,11 @@ func NewServergRPC(addr string, group []*Config) (*ServergRPC, error) {
 	for _, conf := range s.zones {
 		// Should we error if some configs *don't* have TLS?
 		tlsConfig = conf.TLSConfig
+	}
+	// http/2 is required when using gRPC. We need to specify it in next protos
+	// or the upgrade won't happen.
+	if tlsConfig != nil {
+		tlsConfig.NextProtos = []string{"h2"}
 	}
 
 	return &ServergRPC{Server: s, tlsConfig: tlsConfig}, nil
@@ -134,6 +140,7 @@ func (s *ServergRPC) Query(ctx context.Context, in *pb.DnsPacket) (*pb.DnsPacket
 	w := &gRPCresponse{localAddr: s.listenAddr, remoteAddr: a, Msg: msg}
 
 	dnsCtx := context.WithValue(ctx, Key{}, s.Server)
+	dnsCtx = context.WithValue(dnsCtx, LoopKey{}, 0)
 	s.ServeDNS(dnsCtx, w, msg)
 
 	packed, err := w.Msg.Pack()
