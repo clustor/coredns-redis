@@ -1,4 +1,4 @@
-module github.com/rverst/coredns-redis
+module github.com/clustor/coredns-redis
 
 go 1.13
 

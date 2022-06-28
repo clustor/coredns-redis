@@ -1,7 +1,7 @@
 package plugin
 
 import (
-	"github.com/rverst/coredns-redis/record"
+	"github.com/clustor/coredns-redis/record"
 	"math/rand"
 	"net"
 	"testing"

@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"github.com/rverst/coredns-redis/record"
+	"github.com/clustor/coredns-redis/record"
 	"net"
 	"testing"
 )
